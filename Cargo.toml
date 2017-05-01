@@ -1,0 +1,13 @@
+[package]
+name = "visionario_feed"
+version = "0.1.0"
+authors = ["Journeyman <antisocial@storiepvtride.it>"]
+
+[dependencies]
+mysql = "10.0.0"
+clap = "2.23.2"
+chrono = "0.3.0"
+log = "0.3.7"
+hyper = "0.10.9"
+scraper = "0.4.0"
+
