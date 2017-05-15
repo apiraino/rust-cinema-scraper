@@ -60,19 +60,19 @@ fn main() {
     let date = matches.value_of("date_from").unwrap();
 
     // Get movies for the week
-    let client = Client::new();
+    // "client" is mutable otherwise each time it is used, ownership is moved
+    let mut client = Client::new();
     let url = format!("{}/calendario-settimanale/?data={}", CINEMA_URL, date);
     let mut body = String::new();
     if LOCAL_DEBUG
     {
         // Open the file and read content
-        let filename = format!("{}.html", date);
-        let mut f = File::open(filename).unwrap();
+        let mut f = File::open(format!("{}.html", date)).unwrap();
         f.read_to_string(&mut body).unwrap();
     }
     else
     {
-        make_request(client, url, &mut body);
+        make_request(&mut client, url, &mut body);
     }
 
     // "Now you have two problems" (cit. Jamie Zawinski)
@@ -101,7 +101,7 @@ fn main() {
         let href_el = row.select(&href_sel).next().unwrap();
         let movie_url = format!("{}", href_el.value().attr("href").unwrap());
 
-        info!("title={} director={}, orari={} link= {}",
+        info!("Found title={} director={}, timetable={} link={}",
               title, director, timetable, movie_url);
 
         // Get movie detail page
@@ -113,11 +113,9 @@ fn main() {
         }
         else
         {
-            // FIXME: "client" value used here after move
-            let client2 = Client::new();
-            info!("Requesting URL: {}", url);
+            debug!("Requesting URL: {}", url);
             body = String::from("");
-            make_request(client2, url, &mut body);
+            make_request(&mut client, url, &mut body);
         }
         document_detail = Html::parse_document(&body);
 
@@ -134,7 +132,7 @@ fn main() {
     }
 }
 
-fn make_request(client:Client, url:String, body:&mut String) {
+fn make_request(client:&mut Client, url:String, body:&mut String) {
     let mut response = client.get(&url)
         .header(Connection::close()).send().unwrap_or_else(|e| {
             error!("Error occurred: {}", e);
