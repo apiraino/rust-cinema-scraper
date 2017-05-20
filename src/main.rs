@@ -46,9 +46,8 @@ fn main() {
         Err(err) => println!("error starting logger: {}", err)
     };
 
-    let matches = App::new("Visionario feed crawler")
+    let matches = App::new("Cinema feed crawler")
         .version("0.1")
-        .author("Antonio Piraino")
         .about("Grab the weekly cinema feed and store into DB")
         .arg(Arg::with_name("date_from")
              .short("f")
@@ -122,13 +121,25 @@ fn main() {
         // retrieve plot
         let movie_plot_sel = Selector::parse("div.plot").unwrap();
         let p_sel = Selector::parse("p").unwrap();
-        let movie_plot_el = document_detail.select(&movie_plot_sel).next().unwrap();
-        // TODO: movie_plot_el.select(&p_sel).take(1)
-        for item in movie_plot_el.select(&p_sel).skip(1) {
-            let plot = item.text().next().unwrap_or("");
-            info!("plot: {}", plot);
-            break;
-        }
+        // let movie_plot_el = document_detail.select(&movie_plot_sel).next().unwrap();
+        let movie_plot_el = match document_detail.select(&movie_plot_sel).next() {
+            Some(item) => item,
+            None => { panic!("Could not retrieve plot from None object"); }
+        };
+
+        // retrieve all "plot" divs
+        // let mut count = 0;
+        // for item in movie_plot_el.select(&p_sel) {
+        //     let plot = item.text().next().unwrap_or("");
+        //     info!("[{}] plot: {}", count, plot);
+        //     count += 1;
+        // }
+
+        // retrieve just one "plot" div
+        let plot = movie_plot_el.select(&p_sel).nth(1)
+            .unwrap()
+            .text().next().unwrap_or("Error: could not parse plot");
+        info!("plot: {}", plot);
     }
 }
 
