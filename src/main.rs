@@ -3,10 +3,10 @@ extern crate log;
 extern crate clap;
 extern crate scraper;
 extern crate hyper;
+extern crate db;
 
 use std::process;
 use std::io::Read;
-// use std::io::Write;
 use std::fs::File;
 
 use log::{LogRecord, LogLevel, LogMetadata, SetLoggerError, LogLevelFilter};
@@ -14,6 +14,8 @@ use clap::{App, Arg};
 use hyper::Client;
 use hyper::header::Connection;
 use scraper::{Html, Selector};
+
+use db::db_utils;
 
 static CINEMA_URL : &'static str = "http://visionario.movie";
 const LOCAL_DEBUG : bool = false;
@@ -38,13 +40,14 @@ pub fn init_log() -> Result<(), SetLoggerError> {
     })
 }
 
-
 fn main() {
 
     match init_log() {
         Ok(_) => println!("logging started."),
         Err(err) => println!("error starting logger: {}", err)
     };
+
+    db_utils::init_db();
 
     let matches = App::new("Cinema feed crawler")
         .version("0.1")
@@ -128,18 +131,23 @@ fn main() {
         };
 
         // retrieve all "plot" divs
-        // let mut count = 0;
-        // for item in movie_plot_el.select(&p_sel) {
-        //     let plot = item.text().next().unwrap_or("");
-        //     info!("[{}] plot: {}", count, plot);
-        //     count += 1;
-        // }
+        /*
+        let mut count = 0;
+        for item in movie_plot_el.select(&p_sel) {
+            let plot = item.text().next().unwrap_or("");
+            info!("[{}] plot: {}", count, plot);
+            count += 1;
+        }
+        */
 
         // retrieve just one "plot" div
         let plot = movie_plot_el.select(&p_sel).nth(1)
             .unwrap()
             .text().next().unwrap_or("Error: could not parse plot");
         info!("plot: {}", plot);
+
+        // TODO: pass data
+        db_utils::insert_movie();
     }
 }
 
