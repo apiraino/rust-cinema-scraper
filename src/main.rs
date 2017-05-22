@@ -18,7 +18,7 @@ use scraper::{Html, Selector};
 use db::db_utils;
 
 static CINEMA_URL : &'static str = "http://visionario.movie";
-const LOCAL_DEBUG : bool = false;
+const LOCAL_DEBUG : bool = true;
 struct SimpleLogger;
 
 impl log::Log for SimpleLogger {
@@ -63,6 +63,7 @@ fn main() {
 
     // Get movies for the week
     // "client" is mutable otherwise each time it is used, ownership is moved
+    // TODO: use reqwest crate
     let mut client = Client::new();
     let url = format!("{}/calendario-settimanale/?data={}", CINEMA_URL, date);
     let mut body = String::new();
@@ -146,8 +147,14 @@ fn main() {
             .text().next().unwrap_or("Error: could not parse plot");
         info!("plot: {}", plot);
 
-        // TODO: pass data
-        db_utils::insert_movie();
+        // add movie to list
+        db_utils::insert_movie(
+            String::from(title),
+            String::from(director),
+            timetable,
+            String::from(plot),
+            String::from(format!("{}{}", CINEMA_URL, movie_url))
+        );
     }
 }
 
