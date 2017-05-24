@@ -40,7 +40,7 @@ pub mod db_utils {
     pub fn init_db() {
         let db_path = Path::new(DB_PATH);
         if db_path.exists() && db_path.is_file() {
-            match fs::remove_file(db_path) {
+            match remove_file(db_path) {
                 Ok(_) => {},
                 Err(res) => { println!("Error while deleting: {}", res)}
             };
@@ -86,7 +86,7 @@ pub mod db_utils {
         }
     }
 
-    pub fn get_movies() {
+    pub fn get_movies_xml() {
         let db_path = Path::new(DB_PATH);
         let conn = Connection::open(db_path).unwrap();
         let mut stmt = conn.prepare("SELECT id, title, director, timetable, \
@@ -103,8 +103,37 @@ pub mod db_utils {
                 read_date: row.get(7)
             }
         }).unwrap();
+        let mut fp = File::create("feed.xml").expect("just die");
+        match fp.write(b"<?xml version=\"1.0\" encoding=\"utf-8\" ?>
+    <rss version=\"2.0\">
+        <channel>
+            <title>storiepvtride.it feed</title>
+            <link>http://www.storiepvtride.it</link>
+            <description>Free RSS Tutorial</description>") {
+            Ok(_) => println!("Successfully written movie list header"),
+            Err(err) => {println!("Error writing movie list header: {}", err.to_string());}
+        };
         for movie in movie_iter {
-            println!("Found movie {:?}", movie.unwrap());
+            let m = match movie {
+                Ok(x) => x,
+                Err(err) => { println!("Skipping movie: {}", err); continue; }
+            };
+            match write!(fp, "<item>
+            <title>{}</title>
+                <link>{}</link>
+                <description>{}</description>
+                <pubDate>{}</pubDate>
+            </item>",
+                         m.title, m.url, m.plot, m.creation_date) {
+                Ok(_) => {println!("Successfully written movie item");}
+                Err(err) => {println!("Error writing movie item: {}", err.to_string());}
+            };
         }
+
+        match write!(fp, "</channel></rss>") {
+            Ok(_) => {println!("Successfully written movie list tail");}
+            Err(err) => {println!("Error writing movie list tail: {}", err.to_string());}
+        };
+        fp.flush().unwrap();
     }
 }

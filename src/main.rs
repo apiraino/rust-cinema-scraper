@@ -156,6 +156,7 @@ fn main() {
             String::from(format!("{}{}", CINEMA_URL, movie_url))
         );
     }
+    db_utils::get_movies_xml();
 }
 
 fn make_request(client:&mut Client, url:String, body:&mut String) {
