@@ -6,14 +6,13 @@ static DB_PATH : &'static str = "/tmp/cinema.db";
 pub mod db_utils {
 
     use std::path::Path;
-    use std::fs;
+    use std::fs::{File,remove_file};
+    use std::io::Write;
     use chrono::{DateTime,UTC};
     use rusqlite::Connection;
     use DB_PATH;
 
     // TODO: implement Trait to mangle a DateTime from a FromSql
-    extern crate time;
-    use self::time::Timespec;
 
     #[derive(Debug)]
     struct Movie {
@@ -23,8 +22,8 @@ pub mod db_utils {
         title: String,
         plot: String,
         url: String,
-        creation_date: Timespec, // DateTime<UTC>,
-        read_date: Option<Timespec>
+        creation_date: DateTime<UTC>,
+        read_date: Option<DateTime<UTC>>
     }
 
     impl Default for Movie {
@@ -33,7 +32,7 @@ pub mod db_utils {
                    director: String::new(), timetable: String::new(),
                    title: String::new(), plot: String::new(),
                    url: String::new(),
-                   creation_date: time::get_time(), // UTC::now(),
+                   creation_date: UTC::now(),
                    read_date: None}
         }
     }
@@ -74,7 +73,7 @@ pub mod db_utils {
             timetable: timetable,
             plot: plot,
             url: url,
-            creation_date: time::get_time(), // UTC::now(),
+            creation_date: UTC::now(),
             read_date: None
         };
         match conn.execute("INSERT INTO movie (title, director, timetable, \
