@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate log;
 extern crate env_logger;
+
 extern crate rusqlite;
 extern crate chrono;
 
@@ -23,6 +24,7 @@ pub mod db_utils {
         title: String,
         plot: String,
         url: String,
+        guid: String,
         creation_date: DateTime<UTC>,
         read_date: Option<DateTime<UTC>>,
     }
@@ -34,6 +36,7 @@ pub mod db_utils {
     //                director: String::new(), timetable: String::new(),
     //                title: String::new(), plot: String::new(),
     //                url: String::new(),
+    //                guid: String::new(),
     //                creation_date: UTC::now(),
     //                read_date: None}
     //     }
@@ -55,6 +58,7 @@ pub mod db_utils {
                           title           TEXT NOT NULL,
                           plot            TEXT NOT NULL,
                           url             TEXT NOT NULL,
+                          guid            TEXT NOT NULL,
                           creation_date   TEXT NOT NULL,
                           read_date       TEXT NULL)",
                            &[]) {
@@ -76,19 +80,25 @@ pub mod db_utils {
             director: director,
             timetable: timetable,
             plot: plot,
-            url: url,
+            url: String::from(""),
+            guid: url,
             creation_date: UTC::now(),
             read_date: None,
         };
 
+        // use chrono::prelude::*;
+        // let dt = UTC.ymd(2014, 11, 28).and_hms(12, 0, 9);
+        // println!("{:?}", dt.to_rfc2822());
+
         match conn.execute("INSERT INTO movie (title, director, timetable, \
-                            plot, url, creation_date)
-                      VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                            plot, url, guid, creation_date)
+                      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
                            &[&movie.title,
                              &movie.director,
                              &movie.timetable,
                              &movie.plot,
                              &movie.url,
+                             &movie.guid,
                              &movie.creation_date]) {
             Ok(inserted) => debug!("{} row(s) were inserted", inserted),
             Err(err) => error!("INSERT failed: {}", err),
@@ -99,7 +109,7 @@ pub mod db_utils {
         let db_path = Path::new(DB_PATH);
         let conn = Connection::open(db_path).unwrap();
         let mut stmt = conn.prepare("SELECT id, title, director, timetable, \
-                                     plot, url, creation_date, read_date FROM movie")
+                                     plot, url, guid, creation_date, read_date FROM movie")
             .unwrap();
         let movie_iter = stmt.query_map(&[], |row| {
                 Movie {
@@ -109,15 +119,17 @@ pub mod db_utils {
                     timetable: row.get(3),
                     plot: row.get(4),
                     url: row.get(5),
-                    creation_date: row.get(6),
-                    read_date: row.get(7),
+                    guid: row.get(6),
+                    creation_date: row.get(7),
+                    read_date: row.get(8),
                 }
             })
             .unwrap();
         let mut fp = File::create("feed.xml").expect("just die");
         match fp.write(b"<?xml version=\"1.0\" encoding=\"utf-8\" ?>
-    <rss version=\"2.0\">
+    <rss version=\"2.0\" xmlns:atom=\"http://www.w3.org/2005/Atom\">
         <channel>
+           <atom:link href=\"http://www.storiepvtride.it/rss/feed.xml\" rel=\"self\" type=\"application/rss+xml\" />
             <title>Cinema feed</title>
             <link>http://www.storiepvtride.it/rss/feed.xml</link>
             <description>Cinema RSS</description>") {
@@ -136,15 +148,15 @@ pub mod db_utils {
             };
             match write!(fp,
                          "<item>
-            <title>{}</title>
-                <link>{}</link>
+                <title>{}</title>
                 <description>{}</description>
                 <pubDate>{}</pubDate>
+                <guid>{}</guid>
             </item>",
                          m.title,
-                         m.url,
-                         m.plot,
-                         m.creation_date) {
+                         m.plot.replace('&', "&amp;"),
+                         m.creation_date.to_rfc2822(),
+                         m.guid) {
                 Ok(_) => {
                     debug!("Successfully written movie item");
                 }

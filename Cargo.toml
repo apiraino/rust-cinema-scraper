@@ -4,8 +4,9 @@ version = "0.1.0"
 authors = ["Journeyman <antisocial@storiepvtride.it>"]
 
 [dependencies]
+uuid = "0.5"
 clap = "2.24.2"
-chrono = "0.3.0"
+chrono = "0.3"
 log = "0.3.8"
 env_logger = "0.4.3"
 hyper = "0.10.9"
