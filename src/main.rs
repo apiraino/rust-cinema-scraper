@@ -10,7 +10,6 @@ use std::process;
 use std::io::Read;
 use std::fs::File;
 
-use log::{LogRecord, LogLevel, LogMetadata, SetLoggerError, LogLevelFilter};
 use clap::{App, Arg};
 use hyper::Client;
 use hyper::header::Connection;
@@ -18,14 +17,14 @@ use scraper::{Html, Selector};
 
 use db::db_utils;
 
-static CINEMA_URL : &'static str = "http://visionario.movie";
-const LOCAL_DEBUG : bool = true;
+static CINEMA_URL: &'static str = "http://visionario.movie";
+const LOCAL_DEBUG: bool = true;
 
-Fn main() {
+fn main() {
 
     match env_logger::init() {
         Ok(_) => debug!("logging started."),
-        Err(err) => error!("error starting logger: {}", err)
+        Err(err) => error!("error starting logger: {}", err),
     };
 
     db_utils::init_db();
@@ -34,10 +33,10 @@ Fn main() {
         .version("0.1")
         .about("Grab the weekly cinema feed and store into DB, export it as RSS feed")
         .arg(Arg::with_name("date_from")
-             .short("f")
-             .long("date_from")
-             .help("Date FROM to start crawling")
-             .takes_value(true))
+                 .short("f")
+                 .long("date_from")
+                 .help("Date FROM to start crawling")
+                 .takes_value(true))
         .get_matches();
     debug!("Got param: {}", matches.value_of("date_from").unwrap());
     let date = matches.value_of("date_from").unwrap();
@@ -48,14 +47,11 @@ Fn main() {
     let mut client = Client::new();
     let url = format!("{}/calendario-settimanale/?data={}", CINEMA_URL, date);
     let mut body = String::new();
-    if LOCAL_DEBUG
-    {
+    if LOCAL_DEBUG {
         // Open the file and read content
         let mut f = File::open(format!("{}.html", date)).unwrap();
         f.read_to_string(&mut body).unwrap();
-    }
-    else
-    {
+    } else {
         make_request(&mut client, url, &mut body);
     }
 
@@ -86,17 +82,17 @@ Fn main() {
         let movie_url = format!("{}", href_el.value().attr("href").unwrap());
 
         info!("Found title={} director={}, timetable={} link={}",
-              title, director, timetable, movie_url);
+              title,
+              director,
+              timetable,
+              movie_url);
 
         // Get movie detail page
         let url = format!("{}{}", CINEMA_URL, movie_url);
-        if LOCAL_DEBUG
-        {
+        if LOCAL_DEBUG {
             let mut f = File::open("movie_detail.html").unwrap();
             f.read_to_string(&mut body).unwrap();
-        }
-        else
-        {
+        } else {
             debug!("Requesting URL: {}", url);
             body = String::from("");
             make_request(&mut client, url, &mut body);
@@ -109,7 +105,9 @@ Fn main() {
         // let movie_plot_el = document_detail.select(&movie_plot_sel).next().unwrap();
         let movie_plot_el = match document_detail.select(&movie_plot_sel).next() {
             Some(item) => item,
-            None => { panic!("Could not retrieve plot from None object"); }
+            None => {
+                panic!("Could not retrieve plot from None object");
+            }
         };
 
         // retrieve all "plot" divs
@@ -122,29 +120,35 @@ Fn main() {
         }
         */
 
+
         // retrieve just one "plot" div
-        let plot = movie_plot_el.select(&p_sel).nth(1)
+        let plot = movie_plot_el
+            .select(&p_sel)
+            .nth(1)
             .unwrap()
-            .text().next().unwrap_or("Error: could not parse plot");
+            .text()
+            .next()
+            .unwrap_or("Error: could not parse plot");
         info!("plot: {}", plot);
 
         // add movie to list
-        db_utils::insert_movie(
-            String::from(title),
-            String::from(director),
-            timetable,
-            String::from(plot),
-            String::from(format!("{}{}", CINEMA_URL, movie_url))
-        );
+        db_utils::insert_movie(String::from(title),
+                               String::from(director),
+                               timetable,
+                               String::from(plot),
+                               String::from(format!("{}{}", CINEMA_URL, movie_url)));
     }
     db_utils::get_movies_xml();
 }
 
-fn make_request(client:&mut Client, url:String, body:&mut String) {
-    let mut response = client.get(&url)
-        .header(Connection::close()).send().unwrap_or_else(|e| {
-            error!("Error occurred: {}", e);
-            process::exit(1);
-        });
+fn make_request(client: &mut Client, url: String, body: &mut String) {
+    let mut response = client
+        .get(&url)
+        .header(Connection::close())
+        .send()
+        .unwrap_or_else(|e| {
+                            error!("Error occurred: {}", e);
+                            process::exit(1);
+                        });
     response.read_to_string(body).unwrap();
 }
