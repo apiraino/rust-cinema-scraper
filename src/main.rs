@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate log;
+extern crate env_logger;
 extern crate clap;
 extern crate scraper;
 extern crate hyper;
@@ -19,39 +20,19 @@ use db::db_utils;
 
 static CINEMA_URL : &'static str = "http://visionario.movie";
 const LOCAL_DEBUG : bool = true;
-struct SimpleLogger;
 
-impl log::Log for SimpleLogger {
-    fn enabled(&self, metadata: &LogMetadata) -> bool {
-        metadata.level() <= LogLevel::Trace
-    }
+Fn main() {
 
-    fn log(&self, record: &LogRecord) {
-        if self.enabled(record.metadata()) {
-            println!("{} - {}", record.level(), record.args());
-        }
-    }
-}
-
-pub fn init_log() -> Result<(), SetLoggerError> {
-    log::set_logger(|max_log_level| {
-        max_log_level.set(LogLevelFilter::Info);
-        Box::new(SimpleLogger)
-    })
-}
-
-fn main() {
-
-    match init_log() {
-        Ok(_) => println!("logging started."),
-        Err(err) => println!("error starting logger: {}", err)
+    match env_logger::init() {
+        Ok(_) => debug!("logging started."),
+        Err(err) => error!("error starting logger: {}", err)
     };
 
     db_utils::init_db();
 
     let matches = App::new("Cinema feed crawler")
         .version("0.1")
-        .about("Grab the weekly cinema feed and store into DB")
+        .about("Grab the weekly cinema feed and store into DB, export it as RSS feed")
         .arg(Arg::with_name("date_from")
              .short("f")
              .long("date_from")
