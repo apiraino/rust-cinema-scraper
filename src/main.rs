@@ -100,6 +100,19 @@ fn main() {
         }
         document_detail = Html::parse_document(&body);
 
+        // retrieve date of movie publishing
+        // <div class="inizio ">dal 18 maggio 2017</div>
+        let movie_publish_sel = Selector::parse("div.inizio").unwrap();
+        let movie_publish_el = match document_detail.select(&movie_publish_sel).next() {
+            Some(item) => item,
+            None => {
+                panic!("Could not retrieve publish date from None object");
+            }
+        };
+        // let movie_publish_el = row.select(&movie_publish_sel).next().unwrap();
+        let movie_publish = movie_publish_el.text().next().unwrap().trim();
+        info!("movie published on: {}", movie_publish);
+
         // retrieve plot
         let movie_plot_sel = Selector::parse("div.plot").unwrap();
         let p_sel = Selector::parse("p").unwrap();
@@ -111,7 +124,6 @@ fn main() {
             }
         };
 
-        // retrieve all "plot" divs
         /*
         let mut count = 0;
         for item in movie_plot_el.select(&p_sel) {
@@ -120,7 +132,6 @@ fn main() {
             count += 1;
         }
         */
-
 
         // retrieve just one "plot" div
         let plot = movie_plot_el

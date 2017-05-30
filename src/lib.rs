@@ -25,11 +25,11 @@ pub mod db_utils {
         plot: String,
         url: String,
         guid: String,
-        creation_date: DateTime<UTC>,
+        pub_date: DateTime<UTC>,
         read_date: Option<DateTime<UTC>>,
     }
 
-    // TODO: use a Default to automatically set creation_date
+    // TODO: use a Default to automatically set pub_date
     // impl Default for Movie {
     //     fn default() -> Movie {
     //         Movie {id: None,
@@ -37,7 +37,7 @@ pub mod db_utils {
     //                title: String::new(), plot: String::new(),
     //                url: String::new(),
     //                guid: String::new(),
-    //                creation_date: UTC::now(),
+    //                pub_date: UTC::now(),
     //                read_date: None}
     //     }
     // }
@@ -59,7 +59,7 @@ pub mod db_utils {
                           plot            TEXT NOT NULL,
                           url             TEXT NOT NULL,
                           guid            TEXT NOT NULL,
-                          creation_date   TEXT NOT NULL,
+                          pub_date        TEXT NOT NULL,
                           read_date       TEXT NULL)",
                            &[]) {
             Ok(_) => debug!("Table created"),
@@ -82,16 +82,12 @@ pub mod db_utils {
             plot: plot,
             url: String::from(""),
             guid: url,
-            creation_date: UTC::now(),
+            pub_date: UTC::now(),
             read_date: None,
         };
 
-        // use chrono::prelude::*;
-        // let dt = UTC.ymd(2014, 11, 28).and_hms(12, 0, 9);
-        // println!("{:?}", dt.to_rfc2822());
-
         match conn.execute("INSERT INTO movie (title, director, timetable, \
-                            plot, url, guid, creation_date)
+                            plot, url, guid, pub_date)
                       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
                            &[&movie.title,
                              &movie.director,
@@ -99,7 +95,7 @@ pub mod db_utils {
                              &movie.plot,
                              &movie.url,
                              &movie.guid,
-                             &movie.creation_date]) {
+                             &movie.pub_date]) {
             Ok(inserted) => debug!("{} row(s) were inserted", inserted),
             Err(err) => error!("INSERT failed: {}", err),
         }
@@ -109,7 +105,7 @@ pub mod db_utils {
         let db_path = Path::new(DB_PATH);
         let conn = Connection::open(db_path).unwrap();
         let mut stmt = conn.prepare("SELECT id, title, director, timetable, \
-                                     plot, url, guid, creation_date, read_date FROM movie")
+                                     plot, url, guid, pub_date, read_date FROM movie")
             .unwrap();
         let movie_iter = stmt.query_map(&[], |row| {
                 Movie {
@@ -120,7 +116,7 @@ pub mod db_utils {
                     plot: row.get(4),
                     url: row.get(5),
                     guid: row.get(6),
-                    creation_date: row.get(7),
+                    pub_date: row.get(7),
                     read_date: row.get(8),
                 }
             })
@@ -155,7 +151,7 @@ pub mod db_utils {
             </item>",
                          m.title,
                          m.plot.replace('&', "&amp;"),
-                         m.creation_date.to_rfc2822(),
+                         m.pub_date.to_rfc2822(),
                          m.guid) {
                 Ok(_) => {
                     debug!("Successfully written movie item");
