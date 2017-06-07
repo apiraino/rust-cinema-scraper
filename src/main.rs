@@ -5,6 +5,7 @@ extern crate env_logger;
 extern crate clap;
 extern crate scraper;
 extern crate hyper;
+extern crate chrono;
 extern crate db;
 
 use std::process;
@@ -100,19 +101,6 @@ fn main() {
         }
         document_detail = Html::parse_document(&body);
 
-        // retrieve date of movie publishing
-        // <div class="inizio ">dal 18 maggio 2017</div>
-        let movie_publish_sel = Selector::parse("div.inizio").unwrap();
-        let movie_publish_el = match document_detail.select(&movie_publish_sel).next() {
-            Some(item) => item,
-            None => {
-                panic!("Could not retrieve publish date from None object");
-            }
-        };
-        // let movie_publish_el = row.select(&movie_publish_sel).next().unwrap();
-        let movie_publish = movie_publish_el.text().next().unwrap().trim();
-        info!("movie published on: {}", movie_publish);
-
         // retrieve plot
         let movie_plot_sel = Selector::parse("div.plot").unwrap();
         let p_sel = Selector::parse("p").unwrap();
@@ -143,12 +131,31 @@ fn main() {
             .unwrap_or("Error: could not parse plot");
         info!("plot: {}", plot);
 
+        // retrieve date of movie publishing
+        // ex.: <div class="inizio ">dal 18 maggio 2017</div>
+        let movie_publish_sel = Selector::parse("div.inizio").unwrap();
+        let movie_publish_el = match document_detail.select(&movie_publish_sel).next() {
+            Some(item) => item,
+            None => {
+                panic!("Could not retrieve publish date from None object");
+            }
+        };
+        let mut movie_publish: String =
+            String::from(movie_publish_el.text().next().unwrap().trim());
+        movie_publish = _fix_date(&mut movie_publish);
+        debug!("movie published on: {}", movie_publish);
+        let pub_date = match Local.datetime_from_str(movie_publish.as_str(), "%d %B %Y %H:%M:%S") {
+            Ok(num) => num,
+            Err(err) => panic!("Error on parsing date '{}': {}", movie_publish, err),
+        };
+
         // add movie to list
         db_utils::insert_movie(String::from(title),
                                String::from(director),
                                timetable,
                                String::from(plot),
-                               String::from(format!("{}{}", CINEMA_URL, movie_url)));
+                               String::from(format!("{}{}", CINEMA_URL, movie_url)),
+                               pub_date);
     }
     db_utils::get_movies_xml();
 }
@@ -163,4 +170,21 @@ fn make_request(client: &mut Client, url: String, body: &mut String) {
                             process::exit(1);
                         });
     response.read_to_string(body).unwrap();
+}
+
+fn _fix_date(txt: &mut String) -> String {
+    // poor man's date translator for RFC2822 compliancy
+    return txt.replace("dal ", "")
+               .replace("gennaio", "january")
+               .replace("febbrario", "february")
+               .replace("marzo", "march")
+               .replace("aprile", "april")
+               .replace("maggio", "may")
+               .replace("giugno", "june")
+               .replace("luglio", "july")
+               .replace("agosto", "august")
+               .replace("settembre", "september")
+               .replace("ottobre", "october")
+               .replace("novembre", "november")
+               .replace("dicembre", "december") + " 00:00:00";
 }

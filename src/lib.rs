@@ -12,7 +12,7 @@ pub mod db_utils {
     use std::path::Path;
     use std::fs::{File, remove_file};
     use std::io::Write;
-    use chrono::{DateTime, UTC};
+    use chrono::prelude::{DateTime, UTC, Local};
     use rusqlite::Connection;
     use DB_PATH;
 
@@ -25,22 +25,9 @@ pub mod db_utils {
         plot: String,
         url: String,
         guid: String,
-        pub_date: DateTime<UTC>,
-        read_date: Option<DateTime<UTC>>,
+        pub_date: DateTime<Local>,
+        read_date: Option<DateTime<Local>>,
     }
-
-    // TODO: use a Default to automatically set pub_date
-    // impl Default for Movie {
-    //     fn default() -> Movie {
-    //         Movie {id: None,
-    //                director: String::new(), timetable: String::new(),
-    //                title: String::new(), plot: String::new(),
-    //                url: String::new(),
-    //                guid: String::new(),
-    //                pub_date: UTC::now(),
-    //                read_date: None}
-    //     }
-    // }
 
     pub fn init_db() {
         let db_path = Path::new(DB_PATH);
@@ -71,31 +58,20 @@ pub mod db_utils {
                         director: String,
                         timetable: String,
                         plot: String,
-                        url: String) {
+                        url: String,
+                        pub_date: DateTime<Local>) {
         let db_path = Path::new(DB_PATH);
         let conn = Connection::open(db_path).unwrap();
-        let movie = Movie {
-            id: None,
-            title: title,
-            director: director,
-            timetable: timetable,
-            plot: plot,
-            url: String::from(""),
-            guid: url,
-            pub_date: UTC::now(),
-            read_date: None,
-        };
-
         match conn.execute("INSERT INTO movie (title, director, timetable, \
                             plot, url, guid, pub_date)
                       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                           &[&movie.title,
-                             &movie.director,
-                             &movie.timetable,
-                             &movie.plot,
-                             &movie.url,
-                             &movie.guid,
-                             &movie.pub_date]) {
+                           &[&title,
+                             &director,
+                             &timetable,
+                             &plot,
+                             &url,
+                             &url,
+                             &pub_date]) {
             Ok(inserted) => debug!("{} row(s) were inserted", inserted),
             Err(err) => error!("INSERT failed: {}", err),
         }
@@ -126,9 +102,9 @@ pub mod db_utils {
     <rss version=\"2.0\" xmlns:atom=\"http://www.w3.org/2005/Atom\">
         <channel>
            <atom:link href=\"http://www.storiepvtride.it/rss/feed.xml\" rel=\"self\" type=\"application/rss+xml\" />
-            <title>Cinema feed</title>
+            <title>Cinema RSS feed</title>
             <link>http://www.storiepvtride.it/rss/feed.xml</link>
-            <description>Cinema RSS</description>") {
+            <description>Cinema RSS feed</description>") {
             Ok(_) => debug!("Successfully written movie list header"),
             Err(err) => {
                 error!("Error writing movie list header: {}", err.to_string());

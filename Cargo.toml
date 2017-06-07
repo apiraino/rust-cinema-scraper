@@ -14,7 +14,7 @@ scraper = "0.4.0"
 
 # http://kracekumar.com/post/153116176705/my-experience-with-rust
 [dependencies.rusqlite]
-version = "0.11.0"
+version = "0.12.0"
 features = ["chrono"]
 
 [lib]
