@@ -37,9 +37,17 @@ fn main() {
                  .long("--date-from")
                  .help("Date FROM to start crawling")
                  .takes_value(true))
+        .arg(Arg::with_name("feed_path")
+                 .long("--feed-path")
+                 .help("Where to save the feed (default: same dir)")
+                 .takes_value(true))
         .arg_from_usage("--purge-db Delete DB before running")
         .get_matches();
-    let date = matches.value_of("date_from").unwrap();
+    let date_from = matches.value_of("date_from").unwrap();
+    let mut feed_path = format!("{}", matches.value_of("feed_path").unwrap_or_default());
+    if feed_path != "" {
+        feed_path = format!("{}/", feed_path);
+    }
     let purge_db = if matches.is_present("purge-db") {
         true
     } else {
@@ -167,7 +175,7 @@ fn main() {
                                pub_date);
 
     }
-    db_utils::get_movies_xml();
+    db_utils::get_movies_xml(feed_path);
 }
 
 fn make_request(client: &mut Client, url: String, body: &mut String) {

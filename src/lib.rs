@@ -90,7 +90,7 @@ pub mod db_utils {
         return count;
     }
 
-    pub fn get_movies_xml() {
+    pub fn get_movies_xml(feed_path: String) {
         let db_path = Path::new(DB_PATH);
         let conn = Connection::open(db_path).unwrap();
         let mut stmt = conn.prepare("SELECT id, title, director, timetable, \
@@ -110,7 +110,8 @@ pub mod db_utils {
                 }
             })
             .unwrap();
-        let mut fp = File::create("feed.xml").expect("just die");
+        let full_feed_path = format!("{}feed.xml", feed_path);
+        let mut fp = File::create(full_feed_path).expect("just die");
         match fp.write(b"<?xml version=\"1.0\" encoding=\"utf-8\" ?>
     <rss version=\"2.0\" xmlns:atom=\"http://www.w3.org/2005/Atom\">
         <channel>
