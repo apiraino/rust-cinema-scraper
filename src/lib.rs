@@ -80,6 +80,16 @@ pub mod db_utils {
         }
     }
 
+    pub fn get_movie(url: String) -> i32 {
+        let db_path = Path::new(DB_PATH);
+        let conn = Connection::open(db_path).unwrap();
+        let count : i32 = conn.query_row("SELECT count(*) FROM movie WHERE guid = (?)", &[&url], |row| {
+            row.get(0)
+        }).ok().unwrap();
+        info!("{} Record found for {}", count, url);
+        return count;
+    }
+
     pub fn get_movies_xml() {
         let db_path = Path::new(DB_PATH);
         let conn = Connection::open(db_path).unwrap();

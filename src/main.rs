@@ -154,13 +154,18 @@ fn main() {
             Err(err) => panic!("Error on parsing date '{}': {}", movie_publish, err),
         };
 
-        // add movie to list
+        // add movie to list if not already existing
+        let num = db_utils::get_movie(String::from(format!("{}{}", CINEMA_URL, movie_url)));
+        if num > 0 {
+            continue;
+        }
         db_utils::insert_movie(String::from(title),
                                String::from(director),
                                timetable,
                                String::from(plot),
                                String::from(format!("{}{}", CINEMA_URL, movie_url)),
                                pub_date);
+
     }
     db_utils::get_movies_xml();
 }
