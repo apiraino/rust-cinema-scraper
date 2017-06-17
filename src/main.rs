@@ -11,6 +11,7 @@ extern crate db;
 use std::process;
 use std::io::Read;
 use std::fs::File;
+use std::env;
 
 use clap::{App, Arg};
 use hyper::Client;
@@ -20,7 +21,6 @@ use chrono::prelude::*;
 
 use db::db_utils;
 
-static CINEMA_URL: &'static str = "http://visionario.movie";
 const LOCAL_DEBUG: bool = false;
 
 fn main() {
@@ -28,6 +28,12 @@ fn main() {
     match env_logger::init() {
         Ok(_) => debug!("logging started."),
         Err(err) => error!("error starting logger: {}", err),
+    };
+
+    let key = "CINEMA_URL";
+    let cinema_url = match env::var(key) {
+        Ok(val) => val,
+        Err(_) => panic!("Error: could not find CINEMA_URL env var"),
     };
 
     let matches = App::new("Cinema feed crawler")
@@ -60,7 +66,7 @@ fn main() {
     // "client" is mutable otherwise each time it is used, ownership is moved
     // TODO: use reqwest crate
     let mut client = Client::new();
-    let url = format!("{}/calendario-settimanale/?data={}", CINEMA_URL, date_from);
+    let url = format!("{}/calendario-settimanale/?data={}", cinema_url, date_from);
     let mut body = String::new();
     if LOCAL_DEBUG {
         // Open the file and read content
@@ -103,7 +109,7 @@ fn main() {
               movie_url);
 
         // Get movie detail page
-        let url = format!("{}{}", CINEMA_URL, movie_url);
+        let url = format!("{}{}", cinema_url, movie_url);
         if LOCAL_DEBUG {
             let mut f = File::open("movie_detail.html").unwrap();
             f.read_to_string(&mut body).unwrap();
@@ -163,7 +169,7 @@ fn main() {
         };
 
         // add movie to list if not already existing
-        let num = db_utils::get_movie(String::from(format!("{}{}", CINEMA_URL, movie_url)));
+        let num = db_utils::get_movie(String::from(format!("{}{}", cinema_url, movie_url)));
         if num > 0 {
             continue;
         }
@@ -171,7 +177,7 @@ fn main() {
                                String::from(director),
                                timetable,
                                String::from(plot),
-                               String::from(format!("{}{}", CINEMA_URL, movie_url)),
+                               String::from(format!("{}{}", cinema_url, movie_url)),
                                pub_date);
 
     }
