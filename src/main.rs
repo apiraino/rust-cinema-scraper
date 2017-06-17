@@ -56,15 +56,15 @@ fn main() {
 
     db_utils::init_db(purge_db);
 
-    // Get movies for the week
+    // Get movies for this day
     // "client" is mutable otherwise each time it is used, ownership is moved
     // TODO: use reqwest crate
     let mut client = Client::new();
-    let url = format!("{}/calendario-settimanale/?data={}", CINEMA_URL, date);
+    let url = format!("{}/calendario-settimanale/?data={}", CINEMA_URL, date_from);
     let mut body = String::new();
     if LOCAL_DEBUG {
         // Open the file and read content
-        let mut f = File::open(format!("{}.html", date)).unwrap();
+        let mut f = File::open(format!("{}.html", date_from)).unwrap();
         f.read_to_string(&mut body).unwrap();
     } else {
         make_request(&mut client, url, &mut body);
