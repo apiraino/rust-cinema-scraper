@@ -16,11 +16,12 @@ use clap::{App, Arg};
 use hyper::Client;
 use hyper::header::Connection;
 use scraper::{Html, Selector};
+use chrono::prelude::*;
 
 use db::db_utils;
 
 static CINEMA_URL: &'static str = "http://visionario.movie";
-const LOCAL_DEBUG: bool = true;
+const LOCAL_DEBUG: bool = false;
 
 fn main() {
 
@@ -29,19 +30,23 @@ fn main() {
         Err(err) => error!("error starting logger: {}", err),
     };
 
-    db_utils::init_db();
-
     let matches = App::new("Cinema feed crawler")
         .version("0.1")
         .about("Grab the weekly cinema feed and store into DB, export it as RSS feed")
         .arg(Arg::with_name("date_from")
-                 .short("f")
-                 .long("date_from")
+                 .long("--date-from")
                  .help("Date FROM to start crawling")
                  .takes_value(true))
+        .arg_from_usage("--purge-db Delete DB before running")
         .get_matches();
-    debug!("Got param: {}", matches.value_of("date_from").unwrap());
     let date = matches.value_of("date_from").unwrap();
+    let purge_db = if matches.is_present("purge-db") {
+        true
+    } else {
+        false
+    };
+
+    db_utils::init_db(purge_db);
 
     // Get movies for the week
     // "client" is mutable otherwise each time it is used, ownership is moved

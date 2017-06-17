@@ -12,7 +12,7 @@ pub mod db_utils {
     use std::path::Path;
     use std::fs::{File, remove_file};
     use std::io::Write;
-    use chrono::prelude::{DateTime, UTC, Local};
+    use chrono::prelude::{DateTime, Local};
     use rusqlite::Connection;
     use DB_PATH;
 
@@ -29,8 +29,11 @@ pub mod db_utils {
         read_date: Option<DateTime<Local>>,
     }
 
-    pub fn init_db() {
+    pub fn init_db(purge_db: bool) {
         let db_path = Path::new(DB_PATH);
+        if !purge_db {
+            return;
+        }
         if db_path.exists() && db_path.is_file() {
             match remove_file(db_path) {
                 Ok(_) => {}
