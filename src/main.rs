@@ -81,7 +81,7 @@ fn main() {
         let timetable_el = row.select(&timetable_sel).next().unwrap();
         let mut timetable = String::new();
         for t in timetable_el.select(&li_sel) {
-            timetable += t.text().next().unwrap();
+            timetable += t.text().next().unwrap_or_default();
             timetable += " ";
         }
 
