@@ -31,10 +31,10 @@ pub mod db_utils {
 
     pub fn init_db(purge_db: bool) {
         let db_path = Path::new(DB_PATH);
-        if !purge_db {
-            return;
-        }
         if db_path.exists() && db_path.is_file() {
+            if !purge_db {
+                return;
+            }
             match remove_file(db_path) {
                 Ok(_) => {}
                 Err(res) => error!("Error while deleting: {}", res),
