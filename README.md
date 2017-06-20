@@ -5,7 +5,7 @@ This is a little more than the usual `Hello, world!` project. It's a first conta
 However, as any didactical project, it was really useful to learn a lot of things about Rust, its building toolchain, packaging, where to look for help and so on.
 
 #### How does it work
-This little application basically scrapes a web page, extracts some data using regular expressiions, save the results into a SQLite3 DB and outputs anm RSS 2.0/Atom compliant XML file (that I will instruct my RSS feed reader to retrieve).
+This little application basically scrapes a web page, extracts some data using regular expressions, save the results into a SQLite3 DB and outputs anm RSS 2.0/Atom compliant XML file (that I will instruct my RSS feed reader to retrieve).
 
 #### Limitations
 HTML + regex. [Enough said](https://stackoverflow.com/a/1732454).
