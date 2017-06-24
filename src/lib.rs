@@ -140,7 +140,7 @@ pub mod db_utils {
                 <guid>{}</guid>
             </item>",
                          m.title,
-                         m.plot.replace('&', "&amp;"),
+                         format!("{}&lt;br&gt;Orari: {}", m.plot.replace('&', "&amp;"), m.timetable),
                          m.pub_date.to_rfc2822(),
                          m.guid) {
                 Ok(_) => {
