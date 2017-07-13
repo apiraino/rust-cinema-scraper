@@ -4,18 +4,15 @@ extern crate env_logger;
 
 extern crate clap;
 extern crate scraper;
-extern crate hyper;
+extern crate reqwest;
 extern crate chrono;
 extern crate db;
 
-use std::process;
 use std::io::Read;
 use std::fs::File;
 use std::env;
 
 use clap::{App, Arg};
-use hyper::Client;
-use hyper::header::Connection;
 use scraper::{Html, Selector};
 use chrono::prelude::*;
 
@@ -64,16 +61,18 @@ fn main() {
 
     // Get movies for this day
     // "client" is mutable otherwise each time it is used, ownership is moved
-    // TODO: use reqwest crate
-    let mut client = Client::new();
-    let url = format!("{}/calendario-settimanale/?data={}", cinema_url, date_from);
+    // let mut client = Client::new();
+    let mut url = format!("{}/calendario-settimanale/?data={}", cinema_url, date_from);
     let mut body = String::new();
     if LOCAL_DEBUG {
         // Open the file and read content
         let mut f = File::open(format!("{}.html", date_from)).unwrap();
         f.read_to_string(&mut body).unwrap();
     } else {
-        make_request(&mut client, url, &mut body);
+        reqwest::get(&url)
+            .unwrap()
+            .read_to_string(&mut body)
+            .unwrap();
     }
 
     // "Now you have two problems" (cit. Jamie Zawinski)
@@ -109,14 +108,17 @@ fn main() {
               movie_url);
 
         // Get movie detail page
-        let url = format!("{}{}", cinema_url, movie_url);
+        url = format!("{}{}", cinema_url, movie_url);
         if LOCAL_DEBUG {
             let mut f = File::open("movie_detail.html").unwrap();
             f.read_to_string(&mut body).unwrap();
         } else {
             debug!("Requesting URL: {}", url);
             body = String::from("");
-            make_request(&mut client, url, &mut body);
+            reqwest::get(&url)
+                .unwrap()
+                .read_to_string(&mut body)
+                .unwrap();
         }
         document_detail = Html::parse_document(&body);
 
@@ -126,8 +128,11 @@ fn main() {
         // let movie_plot_el = document_detail.select(&movie_plot_sel).next().unwrap();
         let movie_plot_el = match document_detail.select(&movie_plot_sel).next() {
             Some(item) => item,
+            // if plot is not there, the HTML is wrong (e.g. wrong redirect).
+            // Just skip title.
             None => {
-                panic!("Could not retrieve plot from None object");
+                error!("Could not parse HTML for plot for URL: {}", url);
+                continue;
             }
         };
 
@@ -184,17 +189,6 @@ fn main() {
     db_utils::get_movies_xml(feed_path);
 }
 
-fn make_request(client: &mut Client, url: String, body: &mut String) {
-    let mut response = client
-        .get(&url)
-        .header(Connection::close())
-        .send()
-        .unwrap_or_else(|e| {
-                            error!("Error occurred: {}", e);
-                            process::exit(1);
-                        });
-    response.read_to_string(body).unwrap();
-}
 
 fn _fix_date(txt: &mut String) -> String {
     // poor man's date translator for RFC2822 compliancy
