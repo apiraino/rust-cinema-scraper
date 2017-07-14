@@ -131,7 +131,7 @@ fn main() {
             // if plot is not there, the HTML is wrong (e.g. wrong redirect).
             // Just skip title.
             None => {
-                error!("Could not parse HTML for plot for URL: {}", url);
+                warn!("Could not parse HTML for plot for URL: {}", url);
                 continue;
             }
         };
