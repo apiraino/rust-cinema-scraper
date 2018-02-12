@@ -15,8 +15,19 @@ HTML + regex. [Enough said](https://stackoverflow.com/a/1732454).
 *  Install [cargo](https://crates.io) to make your life easier
 
 #### Run
-Example: `cargo run -- --date-from 2017-04-19`
+Example: `CINEMA_URL="http://cinema.website.url" cargo run -- --date-from 2017-04-19`
 Optional parameters:
 
  - `--purge-db` delete (if any) local DB before starting
  - `--feed-path` custom RSS feed save path
+
+#### Verbose debugging:
+
+Application and every library:
+`RUST_LOG=debug cargo run -- --date-from 2017-04-19`
+
+Applicatiion only:
+`RUST_LOG=cinema_feed=debug cargo run -- --date-from 2017-04-19`
+
+DB module only:
+`RUST_LOG=db=debug cargo run -- --date-from 2017-04-19`
