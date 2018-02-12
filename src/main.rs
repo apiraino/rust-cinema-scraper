@@ -1,12 +1,12 @@
+extern crate env_logger;
 #[macro_use]
 extern crate log;
-extern crate env_logger;
 
-extern crate clap;
-extern crate scraper;
-extern crate reqwest;
 extern crate chrono;
+extern crate clap;
 extern crate db;
+extern crate reqwest;
+extern crate scraper;
 
 use std::io::Read;
 use std::fs::File;
@@ -21,11 +21,7 @@ use db::db_utils;
 const LOCAL_DEBUG: bool = false;
 
 fn main() {
-
-    match env_logger::init() {
-        Ok(_) => debug!("logging started."),
-        Err(err) => error!("error starting logger: {}", err),
-    };
+    env_logger::init();
 
     let key = "CINEMA_URL";
     let cinema_url = match env::var(key) {
@@ -36,14 +32,18 @@ fn main() {
     let matches = App::new("Cinema feed crawler")
         .version("0.1")
         .about("Grab the weekly cinema feed and store into DB, export it as RSS feed")
-        .arg(Arg::with_name("date_from")
-                 .long("--date-from")
-                 .help("Date FROM to start crawling")
-                 .takes_value(true))
-        .arg(Arg::with_name("feed_path")
-                 .long("--feed-path")
-                 .help("Where to save the feed (default: same dir)")
-                 .takes_value(true))
+        .arg(
+            Arg::with_name("date_from")
+                .long("--date-from")
+                .help("Date FROM to start crawling")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("feed_path")
+                .long("--feed-path")
+                .help("Where to save the feed (default: same dir)")
+                .takes_value(true),
+        )
         .arg_from_usage("--purge-db Delete DB before running")
         .get_matches();
     let date_from = matches.value_of("date_from").unwrap();
@@ -85,7 +85,6 @@ fn main() {
     let li_sel = Selector::parse("li").unwrap();
     let href_sel = Selector::parse("a").unwrap();
     for row in document.select(&movie_row_sel) {
-
         let title_el = row.select(&title_sel).next().unwrap();
         let title = title_el.text().next().unwrap().trim();
         let director_el = row.select(&director_sel).next().unwrap();
@@ -101,11 +100,13 @@ fn main() {
         let href_el = row.select(&href_sel).next().unwrap();
         let movie_url = format!("{}", href_el.value().attr("href").unwrap());
 
-        info!("Found title={} director={}, timetable={} link={}",
-              title,
-              director,
-              timetable,
-              movie_url);
+        info!(
+            "Found title={} director={}, timetable={} link={}",
+            title,
+            director,
+            timetable,
+            movie_url
+        );
 
         // Get movie detail page
         url = format!("{}{}", cinema_url, movie_url);
@@ -166,8 +167,8 @@ fn main() {
         };
         let mut movie_publish: String =
             String::from(movie_publish_el.text().next().unwrap().trim());
-        movie_publish = _fix_date(&mut movie_publish);
-        debug!("movie published on: {}", movie_publish);
+        movie_publish = _fix_date(movie_publish);
+        debug!("movie published on: '{}'", movie_publish);
         let pub_date = match Local.datetime_from_str(movie_publish.as_str(), "%d %B %Y %H:%M:%S") {
             Ok(num) => num,
             Err(err) => panic!("Error on parsing date '{}': {}", movie_publish, err),
@@ -178,31 +179,32 @@ fn main() {
         if num > 0 {
             continue;
         }
-        db_utils::insert_movie(String::from(title),
-                               String::from(director),
-                               timetable,
-                               String::from(plot),
-                               String::from(format!("{}{}", cinema_url, movie_url)),
-                               pub_date);
-
+        db_utils::insert_movie(
+            String::from(title),
+            String::from(director),
+            timetable,
+            String::from(plot),
+            String::from(format!("{}{}", cinema_url, movie_url)),
+            pub_date,
+        );
     }
     db_utils::get_movies_xml(feed_path);
 }
 
 
-fn _fix_date(txt: &mut String) -> String {
+fn _fix_date(txt: String) -> String {
     // poor man's date translator for RFC2822 compliancy
-    return txt.replace("dal ", "")
-               .replace("gennaio", "january")
-               .replace("febbrario", "february")
-               .replace("marzo", "march")
-               .replace("aprile", "april")
-               .replace("maggio", "may")
-               .replace("giugno", "june")
-               .replace("luglio", "july")
-               .replace("agosto", "august")
-               .replace("settembre", "september")
-               .replace("ottobre", "october")
-               .replace("novembre", "november")
-               .replace("dicembre", "december") + " 00:00:00";
+    return txt.replace("dal", "")
+        .replace("gennaio", "january")
+        .replace("febbraio", "february")
+        .replace("marzo", "march")
+        .replace("aprile", "april")
+        .replace("maggio", "may")
+        .replace("giugno", "june")
+        .replace("luglio", "july")
+        .replace("agosto", "august")
+        .replace("settembre", "september")
+        .replace("ottobre", "october")
+        .replace("novembre", "november")
+        .replace("dicembre", "december") + " 00:00:00";
 }
