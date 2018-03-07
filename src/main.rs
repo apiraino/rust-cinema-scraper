@@ -69,10 +69,9 @@ fn main() {
         let mut f = File::open(format!("{}.html", date_from)).unwrap();
         f.read_to_string(&mut body).unwrap();
     } else {
-        reqwest::get(&url)
-            .unwrap()
-            .read_to_string(&mut body)
-            .unwrap();
+        if let Ok(mut response) = reqwest::get(&url) {
+            response.read_to_string(&mut body).unwrap();
+        }
     }
 
     // "Now you have two problems" (cit. Jamie Zawinski)
@@ -102,10 +101,7 @@ fn main() {
 
         info!(
             "Found title={} director={}, timetable={} link={}",
-            title,
-            director,
-            timetable,
-            movie_url
+            title, director, timetable, movie_url
         );
 
         // Get movie detail page
@@ -116,17 +112,18 @@ fn main() {
         } else {
             debug!("Requesting URL: {}", url);
             body = String::from("");
-            reqwest::get(&url)
-                .unwrap()
-                .read_to_string(&mut body)
-                .unwrap();
+            if let Ok(mut response) = reqwest::get(&url) {
+                response.read_to_string(&mut body).unwrap();
+            } else {
+                warn!("Could not retrieve movie detail page: {}", url);
+                continue;
+            }
         }
         document_detail = Html::parse_document(&body);
 
         // retrieve plot
         let movie_plot_sel = Selector::parse("div.plot").unwrap();
         let p_sel = Selector::parse("p").unwrap();
-        // let movie_plot_el = document_detail.select(&movie_plot_sel).next().unwrap();
         let movie_plot_el = match document_detail.select(&movie_plot_sel).next() {
             Some(item) => item,
             // if plot is not there, the HTML is wrong (e.g. wrong redirect).
@@ -190,7 +187,6 @@ fn main() {
     }
     db_utils::get_movies_xml(feed_path);
 }
-
 
 fn _fix_date(txt: String) -> String {
     // poor man's date translator for RFC2822 compliancy
