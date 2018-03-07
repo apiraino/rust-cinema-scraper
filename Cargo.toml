@@ -9,8 +9,9 @@ clap = "*"
 chrono = "*"
 log = "*"
 env_logger = "*"
-reqwest = "0.8.4"
-scraper = "0.4.0"
+reqwest = "0.8.5"
+# scraper = "0.5.0"
+scraper = { git = "https://github.com/apiraino/scraper.git", branch = "update_selector_lib_take2" }
 
 # http://kracekumar.com/post/153116176705/my-experience-with-rust
 [dependencies.rusqlite]
