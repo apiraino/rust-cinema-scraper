@@ -2,6 +2,7 @@
 name = "cinema_feed"
 version = "0.1.3"
 authors = ["apiraino <apiraino@users.noreply.github.com>"]
+description = "Scrape a cinema website and store the schedule into a DB, export it as RSS feed"
 edition = "2018"
 
 [dependencies]

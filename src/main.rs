@@ -18,18 +18,19 @@ mod db_utils;
 
 const LOCAL_DEBUG: bool = false;
 
-fn main() {
+fn main() -> Result<(), String> {
     env_logger::init();
 
     let key = "CINEMA_URL";
     let cinema_url = match env::var(key) {
         Ok(val) => val,
-        Err(_) => panic!("Error: could not find CINEMA_URL env var"),
+        Err(_) => return Err(format!("Error: could not find CINEMA_URL env var"))
     };
 
     let matches = App::new("Cinema feed crawler")
-        .version("0.1")
-        .about("Grab the weekly cinema feed and store into DB, export it as RSS feed")
+        .author(&clap::crate_authors!()[..])
+        .version(&clap::crate_version!()[..])
+        .about(&clap::crate_description!()[..])
         .arg(
             Arg::with_name("date_from")
                 .long("--date-from")
@@ -157,7 +158,7 @@ fn main() {
         let movie_publish_el = match document_detail.select(&movie_publish_sel).next() {
             Some(item) => item,
             None => {
-                panic!("Could not retrieve publish date from None object");
+                return Err(format!("Could not retrieve publish date from None object"))
             }
         };
         let mut movie_publish =
@@ -166,7 +167,7 @@ fn main() {
         debug!("movie published on: '{}'", movie_publish);
         let pub_date = match Utc.datetime_from_str(movie_publish.as_str(), "%d %B %Y %H:%M:%S") {
             Ok(num) => num,
-            Err(err) => panic!("Error on parsing date '{}': {}", movie_publish, err),
+            Err(err) => return Err(format!("Error on parsing date '{}': {}", movie_publish, err)),
         };
 
         // add movie to list if not already existing
@@ -184,6 +185,8 @@ fn main() {
         );
     }
     db_utils::get_movies_xml(feed_path);
+
+    Ok(())
 }
 
 fn _fix_date(txt: String) -> String {
