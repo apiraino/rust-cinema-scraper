@@ -7,13 +7,14 @@ edition = "2018"
 [dependencies]
 uuid = "0.7.1"
 clap = "2.32.0"
-chrono = "0.4.6"
+# fixes serde serialization on Movie struct!
+chrono = { version = "0.4.6", features = ["serde"] }
 log = "0.4.6"
 env_logger = "0.6.0"
 reqwest = "0.9.5"
 scraper = "0.9.0"
-
+tera = "0.11.20"
+serde = "1.0.84"
+serde_derive = "1.0.84"
 # http://kracekumar.com/post/153116176705/my-experience-with-rust
-[dependencies.rusqlite]
-version = "*"
-features = ["chrono"]
+rusqlite = { version = "0.16.0", features = ["chrono", "bundled"] }

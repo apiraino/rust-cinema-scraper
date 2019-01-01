@@ -1,13 +1,15 @@
-use chrono::prelude::{DateTime, Local};
+use std::fs;
+use tera::Tera;
+use tera::Context;
+use serde_derive::Serialize;
+use chrono::prelude::{DateTime, Utc};
 use log::{debug, error, info};
 use rusqlite::Connection;
-use std::fs::{remove_file, File};
-use std::io::Write;
 use std::path::Path;
 
 const DB_PATH: &'static str = "/tmp/cinema.db";
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 struct Movie {
     id: Option<i32>,
     director: String,
@@ -16,8 +18,10 @@ struct Movie {
     plot: String,
     url: String,
     guid: String,
-    pub_date: DateTime<Local>,
-    read_date: Option<DateTime<Local>>,
+    pub_date: DateTime<Utc>,
+    // a fake db field to store the date in RFC2822 format
+    pub_date_rfc2822: Option<String>,
+    read_date: Option<DateTime<Utc>>,
 }
 
 pub fn init_db(purge_db: bool) {
@@ -26,7 +30,7 @@ pub fn init_db(purge_db: bool) {
         if !purge_db {
             return;
         }
-        match remove_file(db_path) {
+        match fs::remove_file(db_path) {
             Ok(_) => {}
             Err(res) => error!("Error while deleting: {}", res),
         };
@@ -43,7 +47,7 @@ pub fn init_db(purge_db: bool) {
                           guid            TEXT NOT NULL,
                           pub_date        TEXT NOT NULL,
                           read_date       TEXT NULL)",
-        &[],
+        rusqlite::NO_PARAMS,
     ) {
         Ok(_) => debug!("Table created"),
         Err(err) => error!("Table creation failed: {}", err),
@@ -56,7 +60,7 @@ pub fn insert_movie(
     timetable: String,
     plot: String,
     url: String,
-    pub_date: DateTime<Local>,
+    pub_date: DateTime<Utc>,
 ) {
     let db_path = Path::new(DB_PATH);
     let conn = Connection::open(db_path).unwrap();
@@ -64,7 +68,7 @@ pub fn insert_movie(
         "INSERT INTO movie (title, director, timetable, \
          plot, url, guid, pub_date)
                       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-        &[&title, &director, &timetable, &plot, &url, &url, &pub_date],
+        &[&title, &director, &timetable, &plot, &url, &url, &pub_date.to_rfc2822()],
     ) {
         Ok(inserted) => debug!("{} row(s) were inserted", inserted),
         Err(err) => error!("INSERT failed: {}", err),
@@ -96,7 +100,7 @@ pub fn get_movies_xml(feed_path: String) {
         )
         .unwrap();
     let movie_iter = stmt
-        .query_map(&[], |row| Movie {
+        .query_map(rusqlite::NO_PARAMS, |row| Movie {
             id: row.get(0),
             title: row.get(1),
             director: row.get(2),
@@ -105,64 +109,28 @@ pub fn get_movies_xml(feed_path: String) {
             url: row.get(5),
             guid: row.get(6),
             pub_date: row.get(7),
+            pub_date_rfc2822: row.get(7),
             read_date: row.get(8),
         })
         .unwrap();
-    let full_feed_path = format!("{}feed.xml", feed_path);
-    let mut fp = File::create(full_feed_path).expect("just die");
-    match fp.write(b"<?xml version=\"1.0\" encoding=\"utf-8\" ?>
-    <rss version=\"2.0\" xmlns:atom=\"http://www.w3.org/2005/Atom\">
-        <channel>
-           <atom:link href=\"http://www.storiepvtride.it/rss/feed.xml\" rel=\"self\" type=\"application/rss+xml\" />
-            <title>Cinema RSS feed</title>
-            <link>http://www.storiepvtride.it/rss/feed.xml</link>
-            <description>Cinema RSS feed</description>") {
-            Ok(_) => debug!("Successfully written movie list header"),
-            Err(err) => {
-                error!("Error writing movie list header: {}", err.to_string());
-            }
-        };
+
+    let mut movie_list = vec![];
     for movie in movie_iter {
-        let m = match movie {
+        let mut m = match movie {
             Ok(x) => x,
             Err(err) => {
                 error!("Skipping movie: {}", err);
                 continue;
             }
         };
-        match write!(
-            fp,
-            "<item>
-                <title>{}</title>
-                <description>{}</description>
-                <pubDate>{}</pubDate>
-                <guid>{}</guid>
-            </item>",
-            m.title,
-            format!(
-                "{}&lt;br&gt;Orari: {}",
-                m.plot.replace('&', "&amp;"),
-                m.timetable
-            ),
-            m.pub_date.to_rfc2822(),
-            m.guid
-        ) {
-            Ok(_) => {
-                debug!("Successfully written movie item");
-            }
-            Err(err) => {
-                error!("Error writing movie item: {}", err.to_string());
-            }
-        };
+        m.pub_date_rfc2822 = Some(m.pub_date.to_rfc2822());
+        movie_list.push(m);
     }
 
-    match write!(fp, "</channel></rss>") {
-        Ok(_) => {
-            debug!("Successfully written movie list tail");
-        }
-        Err(err) => {
-            error!("Error writing movie list tail: {}", err.to_string());
-        }
-    };
-    fp.flush().unwrap();
+    let mut ctx = Context::new();
+    ctx.insert("items", &movie_list);
+    let _tera = Tera::new("./*").unwrap();
+    let result = _tera.render("feed.tera", &ctx).unwrap();
+    let full_feed_path = format!("{}feed.xml", feed_path);
+    fs::write(full_feed_path, result).unwrap();
 }

@@ -160,11 +160,11 @@ fn main() {
                 panic!("Could not retrieve publish date from None object");
             }
         };
-        let mut movie_publish: String =
+        let mut movie_publish =
             String::from(movie_publish_el.text().next().unwrap().trim());
         movie_publish = _fix_date(movie_publish);
         debug!("movie published on: '{}'", movie_publish);
-        let pub_date = match Local.datetime_from_str(movie_publish.as_str(), "%d %B %Y %H:%M:%S") {
+        let pub_date = match Utc.datetime_from_str(movie_publish.as_str(), "%d %B %Y %H:%M:%S") {
             Ok(num) => num,
             Err(err) => panic!("Error on parsing date '{}': {}", movie_publish, err),
         };

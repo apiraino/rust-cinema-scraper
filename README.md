@@ -11,8 +11,8 @@ This little application basically scrapes a web page, extracts some data using r
 HTML + regex. [Enough said](https://stackoverflow.com/a/1732454).
 
 #### Installation and requirements
-* Tested with Rust 1.8 stable
-*  Install [cargo](https://crates.io) to make your life easier
+* Tested with Rust 1.31 stable
+* Install [cargo](https://crates.io) to make your life easier
 
 #### Run
 Example: `CINEMA_URL="http://cinema.website.url" cargo run -- --date-from 2017-04-19`
