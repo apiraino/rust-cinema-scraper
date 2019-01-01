@@ -1,22 +1,20 @@
-extern crate env_logger;
-#[macro_use]
-extern crate log;
+use env_logger;
+use log::{debug, info, warn};
 
-extern crate chrono;
-extern crate clap;
-extern crate db;
-extern crate reqwest;
-extern crate scraper;
+use chrono;
+use clap;
+use reqwest;
+use scraper;
 
-use std::io::Read;
-use std::fs::File;
 use std::env;
+use std::fs::File;
+use std::io::Read;
 
+use chrono::prelude::*;
 use clap::{App, Arg};
 use scraper::{Html, Selector};
-use chrono::prelude::*;
 
-use db::db_utils;
+mod db_utils;
 
 const LOCAL_DEBUG: bool = false;
 
@@ -190,7 +188,8 @@ fn main() {
 
 fn _fix_date(txt: String) -> String {
     // poor man's date translator for RFC2822 compliancy
-    return txt.replace("dal", "")
+    return txt
+        .replace("dal", "")
         .replace("gennaio", "january")
         .replace("febbraio", "february")
         .replace("marzo", "march")
@@ -202,5 +201,6 @@ fn _fix_date(txt: String) -> String {
         .replace("settembre", "september")
         .replace("ottobre", "october")
         .replace("novembre", "november")
-        .replace("dicembre", "december") + " 00:00:00";
+        .replace("dicembre", "december")
+        + " 00:00:00";
 }
