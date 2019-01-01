@@ -6,7 +6,6 @@ description = "Scrape a cinema website and store the schedule into a DB, export 
 keywords = ["rss", "feed", "cinema", "scraping"]
 license = " GPL-2.0-or-later"
 license-file = "LICENSE"
-documentation = "none"
 homepage = "https://github.com/apiraino/rust-cinema-scraper"
 repository = "https://github.com/apiraino/rust-cinema-scraper"
 readme = "README.md"
