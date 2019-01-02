@@ -5,7 +5,6 @@ authors = ["apiraino <apiraino@users.noreply.github.com>"]
 description = "Scrape a cinema website and store the schedule into a DB, export it as RSS feed"
 keywords = ["rss", "feed", "cinema", "scraping"]
 license = " GPL-2.0-or-later"
-license-file = "LICENSE"
 homepage = "https://github.com/apiraino/rust-cinema-scraper"
 repository = "https://github.com/apiraino/rust-cinema-scraper"
 readme = "README.md"
